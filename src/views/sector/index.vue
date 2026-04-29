@@ -20,6 +20,7 @@
           <el-form-item>
             <el-button type="primary" @click="handleSearch" :icon="Search">搜索</el-button>
             <el-button @click="resetSearch" :icon="Refresh">重置</el-button>
+            <el-button type="success" @click="handleExport" :icon="Download" plain :loading="exportLoading">导出</el-button>
           </el-form-item>
         </el-form>
       </div>
@@ -76,7 +77,7 @@
 </template>
 
 <script setup>
-import {getSectorList} from '@/api/modules/api.stock'
+import {getSectorList, exportSectors} from '@/api/modules/api.stock'
 import {useRoute, useRouter} from 'vue-router'
 import SortBar from '@/components/SortBar.vue'
 
@@ -87,6 +88,7 @@ const typeTagMap = {industry: '', concept: 'warning', area: 'success'}
 const typeLabelMap = {industry: '行业', concept: '概念', area: '地区'}
 
 const loading = ref(false)
+const exportLoading = ref(false)
 const tableData = ref([])
 const sortItems = ref([])
 const tableMaxHeight = computed(() => window.innerHeight - 280)
@@ -154,6 +156,33 @@ const resetSearch = () => {
   searchForm.sectorType = ''
   sortItems.value = []
   handleSearch()
+}
+
+const handleExport = async () => {
+  exportLoading.value = true
+  try {
+    const params = {}
+    if (searchForm.sectorName) params.sectorName = searchForm.sectorName
+    if (searchForm.sectorCode) params.sectorCode = searchForm.sectorCode
+    if (searchForm.sectorType) params.sectorType = searchForm.sectorType
+    if (sortItems.value.length > 0) {
+      params.sortField = sortItems.value[0].field
+      params.sortOrder = sortItems.value[0].order
+    }
+    const res = await exportSectors(params)
+    const blob = new Blob([res.origin.data], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = '板块数据.xlsx'
+    link.click()
+    URL.revokeObjectURL(link.href)
+    ElMessage.success('导出成功')
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('导出失败')
+  } finally {
+    exportLoading.value = false
+  }
 }
 
 const handleRowClick = (row) => {

@@ -14,6 +14,7 @@
               {{ autoRefreshing ? '停止刷新' : '重计算' }}
             </el-button>
             <el-button type="primary" size="small" :icon="Plus" @click="showAddDialog">添加自选</el-button>
+            <el-button type="success" size="small" :icon="Download" plain :loading="exportLoading" @click="handleExport">导出</el-button>
           </div>
         </div>
       </template>
@@ -109,7 +110,7 @@
 </template>
 
 <script setup>
-import {getWatchlist, addWatchlist, removeWatchlist, updateWatchlistRemark, refreshWatchlist} from '@/api/modules/api.stock'
+import {getWatchlist, addWatchlist, removeWatchlist, updateWatchlistRemark, refreshWatchlist, exportWatchlist} from '@/api/modules/api.stock'
 import {useRouter} from 'vue-router'
 import {Refresh, Plus, TrendCharts, DataLine} from '@element-plus/icons-vue'
 
@@ -119,6 +120,7 @@ const loading = ref(false)
 const refreshing = ref(false)
 const autoRefreshing = ref(false)
 const addLoading = ref(false)
+const exportLoading = ref(false)
 const tableData = ref([])
 const addDialogVisible = ref(false)
 const addFormRef = ref()
@@ -266,6 +268,25 @@ const saveRemark = async (row) => {
     ElMessage.success('备注已更新')
   } catch {
     row._remark = row.remark || ''
+  }
+}
+
+const handleExport = async () => {
+  exportLoading.value = true
+  try {
+    const res = await exportWatchlist()
+    const blob = new Blob([res.origin.data], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = '自选股数据.xlsx'
+    link.click()
+    URL.revokeObjectURL(link.href)
+    ElMessage.success('导出成功')
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('导出失败')
+  } finally {
+    exportLoading.value = false
   }
 }
 

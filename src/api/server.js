@@ -86,6 +86,10 @@ class AxiosService {
   delete(url, params = null) {
     return instance.request({method: 'delete', url, params})
   }
+
+  download(url, params = null) {
+    return instance.request({method: 'get', url, params, responseType: 'blob'})
+  }
 }
 
 const axiosService = new AxiosService()

@@ -226,7 +226,7 @@ function renderChart(labels, counts) {
 onMounted(async () => {
   try {
     const [stockRes, industryRes, conceptRes, areaRes, distRes] = await Promise.all([
-      getAShareList({pageNum: 1, pageSize: 1}),
+      getAShareList({pageNum: 1, pageSize: 1, includeSt: true}),
       getSectorList({pageNum: 1, pageSize: 1, sectorType: 'industry'}),
       getSectorList({pageNum: 1, pageSize: 1, sectorType: 'concept'}),
       getSectorList({pageNum: 1, pageSize: 1, sectorType: 'area'}),

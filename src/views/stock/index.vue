@@ -3,7 +3,8 @@
     <el-card shadow="never">
       <!-- 搜索栏 -->
       <div class="search-bar">
-        <el-form :model="searchForm" inline>
+        <el-form :model="searchForm" inline class="search-form-grid">
+          <!-- 第一行：始终显示 -->
           <el-form-item label="股票代码">
             <el-input v-model="searchForm.stockCode" placeholder="模糊搜索" clearable @clear="handleSearch"/>
           </el-form-item>
@@ -16,20 +17,61 @@
               <el-option v-for="item in filteredSectorOptions" :key="item.value" :label="item.label" :value="item.value"/>
             </el-select>
           </el-form-item>
-          <el-form-item label="涨跌幅%">
-            <div style="display:flex;align-items:center;gap:4px">
-              <el-input v-model="searchForm.minChange" placeholder="最低" style="width:80px" clearable/>
-              <span>~</span>
-              <el-input v-model="searchForm.maxChange" placeholder="最高" style="width:80px" clearable/>
-            </div>
-          </el-form-item>
-          <el-form-item label="含ST">
-            <el-switch v-model="searchForm.includeSt" inline-prompt active-text="是" inactive-text="否"/>
-          </el-form-item>
+          <!-- 折叠区域 -->
+          <template v-if="searchExpanded">
+            <el-form-item label="涨跌幅%">
+              <div class="range-input">
+                <el-input v-model="searchForm.minChange" placeholder="最低" clearable/>
+                <span class="range-sep">~</span>
+                <el-input v-model="searchForm.maxChange" placeholder="最高" clearable/>
+              </div>
+            </el-form-item>
+            <el-form-item label="换手率%">
+              <div class="range-input">
+                <el-input v-model="searchForm.minTurnoverRate" placeholder="最低" clearable/>
+                <span class="range-sep">~</span>
+                <el-input v-model="searchForm.maxTurnoverRate" placeholder="最高" clearable/>
+              </div>
+            </el-form-item>
+            <el-form-item label="量比">
+              <div class="range-input">
+                <el-input v-model="searchForm.minVolumeRatio" placeholder="最低" clearable/>
+                <span class="range-sep">~</span>
+                <el-input v-model="searchForm.maxVolumeRatio" placeholder="最高" clearable/>
+              </div>
+            </el-form-item>
+            <el-form-item label="RSI30">
+              <div class="range-input">
+                <el-input v-model="searchForm.minRsi30" placeholder="最低" clearable/>
+                <span class="range-sep">~</span>
+                <el-input v-model="searchForm.maxRsi30" placeholder="最高" clearable/>
+              </div>
+            </el-form-item>
+            <el-form-item label="含ST">
+              <div class="switch-input">
+                <el-switch v-model="searchForm.includeSt" inline-prompt active-text="是" inactive-text="否"/>
+              </div>
+            </el-form-item>
+            <el-form-item label="低于年内价">
+              <div class="switch-input">
+                <el-switch v-model="searchForm.belowYearLow" inline-prompt active-text="是" inactive-text="否"/>
+              </div>
+            </el-form-item>
+            <el-form-item label="低于月内价">
+              <div class="switch-input">
+                <el-switch v-model="searchForm.belowMonthLow" inline-prompt active-text="是" inactive-text="否"/>
+              </div>
+            </el-form-item>
+          </template>
         </el-form>
         <div class="search-actions">
           <el-button type="primary" @click="handleSearch" :icon="Search" round>搜索</el-button>
           <el-button type="info" @click="resetSearch" :icon="Refresh" round plain>重置</el-button>
+          <el-button type="success" @click="handleExport" :icon="Download" round plain :loading="exportLoading">导出</el-button>
+          <el-button link type="primary" @click="searchExpanded = !searchExpanded">
+            {{ searchExpanded ? '收起' : '展开' }}
+            <el-icon :class="{'expand-icon': true, 'is-expanded': searchExpanded}"><ArrowDown/></el-icon>
+          </el-button>
         </div>
       </div>
 
@@ -102,14 +144,16 @@
 </template>
 
 <script setup>
-import {getAShareList, getSectorList, addWatchlist} from '@/api/modules/api.stock'
+import {getAShareList, getSectorList, addWatchlist, exportStocks} from '@/api/modules/api.stock'
 import {useRoute, useRouter} from 'vue-router'
 import SortBar from '@/components/SortBar.vue'
 
 const route = useRoute()
 const router = useRouter()
 
+const searchExpanded = ref(false)
 const loading = ref(false)
+const exportLoading = ref(false)
 const sectorLoading = ref(false)
 const tableData = ref([])
 const allSectorOptions = ref([])
@@ -139,6 +183,14 @@ const searchForm = reactive({
   maxChangeInclusive: false,
   minChangeInclusive: true,
   includeSt: false,
+  minTurnoverRate: '',
+  maxTurnoverRate: '',
+  minVolumeRatio: '',
+  maxVolumeRatio: '',
+  minRsi30: '',
+  maxRsi30: '',
+  belowYearLow: false,
+  belowMonthLow: false,
 })
 
 const pagination = reactive({
@@ -162,6 +214,14 @@ const fetchData = async () => {
     if (searchForm.maxChangeInclusive) params.maxChangeInclusive = true
     if (!searchForm.minChangeInclusive) params.minChangeInclusive = false
     if (searchForm.includeSt) params.includeSt = true
+    if (searchForm.minTurnoverRate !== '' && searchForm.minTurnoverRate !== null) params.minTurnoverRate = searchForm.minTurnoverRate
+    if (searchForm.maxTurnoverRate !== '' && searchForm.maxTurnoverRate !== null) params.maxTurnoverRate = searchForm.maxTurnoverRate
+    if (searchForm.minVolumeRatio !== '' && searchForm.minVolumeRatio !== null) params.minVolumeRatio = searchForm.minVolumeRatio
+    if (searchForm.maxVolumeRatio !== '' && searchForm.maxVolumeRatio !== null) params.maxVolumeRatio = searchForm.maxVolumeRatio
+    if (searchForm.minRsi30 !== '' && searchForm.minRsi30 !== null) params.minRsi30 = searchForm.minRsi30
+    if (searchForm.maxRsi30 !== '' && searchForm.maxRsi30 !== null) params.maxRsi30 = searchForm.maxRsi30
+    if (searchForm.belowYearLow) params.belowYearLow = true
+    if (searchForm.belowMonthLow) params.belowMonthLow = true
     // 排序参数：取优先级最高的排序项
     if (sortItems.value.length > 0) {
       params.sortField = sortItems.value[0].field
@@ -188,6 +248,46 @@ const onSortChange = () => {
   fetchData()
 }
 
+const handleExport = async () => {
+  exportLoading.value = true
+  try {
+    const params = {}
+    if (searchForm.stockCode) params.stockCode = searchForm.stockCode
+    if (searchForm.stockName) params.stockName = searchForm.stockName
+    if (searchForm.sectorCode) params.sectorCode = searchForm.sectorCode
+    if (searchForm.minChange !== '' && searchForm.minChange !== null) params.minChange = searchForm.minChange
+    if (searchForm.maxChange !== '' && searchForm.maxChange !== null) params.maxChange = searchForm.maxChange
+    if (searchForm.maxChangeInclusive) params.maxChangeInclusive = true
+    if (!searchForm.minChangeInclusive) params.minChangeInclusive = false
+    if (searchForm.includeSt) params.includeSt = true
+    if (searchForm.minTurnoverRate !== '' && searchForm.minTurnoverRate !== null) params.minTurnoverRate = searchForm.minTurnoverRate
+    if (searchForm.maxTurnoverRate !== '' && searchForm.maxTurnoverRate !== null) params.maxTurnoverRate = searchForm.maxTurnoverRate
+    if (searchForm.minVolumeRatio !== '' && searchForm.minVolumeRatio !== null) params.minVolumeRatio = searchForm.minVolumeRatio
+    if (searchForm.maxVolumeRatio !== '' && searchForm.maxVolumeRatio !== null) params.maxVolumeRatio = searchForm.maxVolumeRatio
+    if (searchForm.minRsi30 !== '' && searchForm.minRsi30 !== null) params.minRsi30 = searchForm.minRsi30
+    if (searchForm.maxRsi30 !== '' && searchForm.maxRsi30 !== null) params.maxRsi30 = searchForm.maxRsi30
+    if (searchForm.belowYearLow) params.belowYearLow = true
+    if (searchForm.belowMonthLow) params.belowMonthLow = true
+    if (sortItems.value.length > 0) {
+      params.sortField = sortItems.value[0].field
+      params.sortOrder = sortItems.value[0].order
+    }
+    const res = await exportStocks(params)
+    const blob = new Blob([res.origin.data], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = '全股数据.xlsx'
+    link.click()
+    URL.revokeObjectURL(link.href)
+    ElMessage.success('导出成功')
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('导出失败')
+  } finally {
+    exportLoading.value = false
+  }
+}
+
 const resetSearch = () => {
   searchForm.stockCode = ''
   searchForm.stockName = ''
@@ -197,6 +297,14 @@ const resetSearch = () => {
   searchForm.maxChangeInclusive = false
   searchForm.minChangeInclusive = true
   searchForm.includeSt = false
+  searchForm.minTurnoverRate = ''
+  searchForm.maxTurnoverRate = ''
+  searchForm.minVolumeRatio = ''
+  searchForm.maxVolumeRatio = ''
+  searchForm.minRsi30 = ''
+  searchForm.maxRsi30 = ''
+  searchForm.belowYearLow = false
+  searchForm.belowMonthLow = false
   sortItems.value = []
   handleSearch()
 }
@@ -298,8 +406,46 @@ watch(() => route.query, (query) => {
   align-items: flex-start;
   justify-content: space-between;
 
-  :deep(.el-form--inline .el-form-item) {
-    margin-right: 16px;
+  .search-form-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    column-gap: 16px;
+    row-gap: 12px;
+
+    :deep(.el-form-item) {
+      margin-right: 0;
+      margin-bottom: 0;
+    }
+
+    // 所有输入控件统一宽度
+    :deep(.el-input),
+    :deep(.el-select) {
+      width: 100%;
+    }
+
+    .range-input {
+      display: flex;
+      align-items: center;
+      width: 100%;
+
+      .el-input {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .range-sep {
+        flex-shrink: 0;
+        padding: 0 4px;
+        color: #909399;
+      }
+    }
+
+    .switch-input {
+      width: 100%;
+      display: flex;
+      align-items: center;
+    }
   }
 
   .search-actions {
@@ -308,6 +454,14 @@ watch(() => route.query, (query) => {
     align-items: center;
     gap: 8px;
     padding-top: 4px;
+    margin-left: 16px;
+
+    .expand-icon {
+      transition: transform 0.3s;
+      &.is-expanded {
+        transform: rotate(180deg);
+      }
+    }
   }
 }
 

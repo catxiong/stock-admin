@@ -44,3 +44,18 @@ export function refreshWatchlist(stockCodes) {
 export function getPriceChangeDistribution() {
   return service.get('/stock/stock/aShare/distribution')
 }
+
+// 导出全股数据
+export function exportStocks(params) {
+  return service.download('/stock/stock/aShare/export', params)
+}
+
+// 导出板块数据
+export function exportSectors(params) {
+  return service.download('/stock/stock/sector/export', params)
+}
+
+// 导出自选股数据
+export function exportWatchlist() {
+  return service.download('/stock/stock/watchlist/export')
+}
