@@ -13,8 +13,17 @@
           </el-form-item>
           <el-form-item label="所属板块">
             <el-select v-model="searchForm.sectorCode" placeholder="输入板块名称搜索" clearable filterable
-                       :filter-method="filterSector" :loading="sectorLoading" @clear="onSectorClear">
-              <el-option v-for="item in filteredSectorOptions" :key="item.value" :label="item.label" :value="item.value"/>
+                       :filter-method="filterSector" :loading="sectorLoading" @clear="onSectorClear"
+                       @change="onSectorChange">
+              <el-option-group label="行业板块">
+                <el-option v-for="item in filteredIndustrySectors" :key="item.value" :label="item.label" :value="item.value"/>
+              </el-option-group>
+              <el-option-group label="概念板块">
+                <el-option v-for="item in filteredConceptSectors" :key="item.value" :label="item.label" :value="item.value"/>
+              </el-option-group>
+              <el-option-group label="地区板块">
+                <el-option v-for="item in filteredAreaSectors" :key="item.value" :label="item.label" :value="item.value"/>
+              </el-option-group>
             </el-select>
           </el-form-item>
           <!-- 折叠区域 -->
@@ -90,7 +99,13 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="sectorName" label="所属板块" min-width="140"/>
+        <el-table-column label="所属板块" min-width="200">
+          <template #default="{row}">
+            <span v-if="row.industrySectorName" class="sector-tag industry">{{ row.industrySectorName }}</span>
+            <span v-if="row.conceptSectorName" class="sector-tag concept">{{ row.conceptSectorName }}</span>
+            <span v-if="row.areaSectorName" class="sector-tag area">{{ row.areaSectorName }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="currentPrice" label="现价" width="100" align="right"/>
         <el-table-column prop="priceChange" label="涨跌额" width="120" align="right">
           <template #default="{row}">
@@ -156,10 +171,16 @@ const loading = ref(false)
 const exportLoading = ref(false)
 const sectorLoading = ref(false)
 const tableData = ref([])
-const allSectorOptions = ref([])
-const filteredSectorOptions = ref([])
 const sortItems = ref([])
 const tableMaxHeight = computed(() => window.innerHeight - 280)
+
+// 板块选项按类型分组
+const industrySectorOptions = ref([])
+const conceptSectorOptions = ref([])
+const areaSectorOptions = ref([])
+const filteredIndustrySectors = ref([])
+const filteredConceptSectors = ref([])
+const filteredAreaSectors = ref([])
 
 const stockSortFields = [
   {field: 'priceChangePercent', label: '涨跌幅'},
@@ -178,6 +199,7 @@ const searchForm = reactive({
   stockCode: '',
   stockName: '',
   sectorCode: '',
+  sectorType: '',
   minChange: '',
   maxChange: '',
   maxChangeInclusive: false,
@@ -208,7 +230,11 @@ const fetchData = async () => {
     }
     if (searchForm.stockCode) params.stockCode = searchForm.stockCode
     if (searchForm.stockName) params.stockName = searchForm.stockName
-    if (searchForm.sectorCode) params.sectorCode = searchForm.sectorCode
+    if (searchForm.sectorCode) {
+      params.sectorCode = searchForm.sectorCode
+      // 传递板块类型以便后端精确匹配
+      if (searchForm.sectorType) params.sectorType = searchForm.sectorType
+    }
     if (searchForm.minChange !== '' && searchForm.minChange !== null) params.minChange = searchForm.minChange
     if (searchForm.maxChange !== '' && searchForm.maxChange !== null) params.maxChange = searchForm.maxChange
     if (searchForm.maxChangeInclusive) params.maxChangeInclusive = true
@@ -254,7 +280,10 @@ const handleExport = async () => {
     const params = {}
     if (searchForm.stockCode) params.stockCode = searchForm.stockCode
     if (searchForm.stockName) params.stockName = searchForm.stockName
-    if (searchForm.sectorCode) params.sectorCode = searchForm.sectorCode
+    if (searchForm.sectorCode) {
+      params.sectorCode = searchForm.sectorCode
+      if (searchForm.sectorType) params.sectorType = searchForm.sectorType
+    }
     if (searchForm.minChange !== '' && searchForm.minChange !== null) params.minChange = searchForm.minChange
     if (searchForm.maxChange !== '' && searchForm.maxChange !== null) params.maxChange = searchForm.maxChange
     if (searchForm.maxChangeInclusive) params.maxChangeInclusive = true
@@ -292,6 +321,7 @@ const resetSearch = () => {
   searchForm.stockCode = ''
   searchForm.stockName = ''
   searchForm.sectorCode = ''
+  searchForm.sectorType = ''
   searchForm.minChange = ''
   searchForm.maxChange = ''
   searchForm.maxChangeInclusive = false
@@ -309,32 +339,73 @@ const resetSearch = () => {
   handleSearch()
 }
 
+// 板块选择变更时，自动设置sectorType
+const onSectorChange = (val) => {
+  if (!val) {
+    searchForm.sectorType = ''
+    return
+  }
+  // 从全量板块选项中查找对应的sectorType
+  const allSectors = [...industrySectorOptions.value, ...conceptSectorOptions.value, ...areaSectorOptions.value]
+  const found = allSectors.find(s => s.value === val)
+  searchForm.sectorType = found ? found.sectorType : ''
+}
+
 // 前端模糊搜索板块
 const filterSector = (query) => {
   if (!query) {
-    filteredSectorOptions.value = allSectorOptions.value.slice(0, 50)
+    filteredIndustrySectors.value = industrySectorOptions.value.slice(0, 30)
+    filteredConceptSectors.value = conceptSectorOptions.value.slice(0, 30)
+    filteredAreaSectors.value = areaSectorOptions.value.slice(0, 30)
     return
   }
   const q = query.toLowerCase()
-  filteredSectorOptions.value = allSectorOptions.value.filter(
+  filteredIndustrySectors.value = industrySectorOptions.value.filter(
     item => item.label.toLowerCase().includes(q) || item.value.toLowerCase().includes(q)
-  ).slice(0, 50)
+  ).slice(0, 30)
+  filteredConceptSectors.value = conceptSectorOptions.value.filter(
+    item => item.label.toLowerCase().includes(q) || item.value.toLowerCase().includes(q)
+  ).slice(0, 30)
+  filteredAreaSectors.value = areaSectorOptions.value.filter(
+    item => item.label.toLowerCase().includes(q) || item.value.toLowerCase().includes(q)
+  ).slice(0, 30)
 }
 
 const onSectorClear = () => {
-  filteredSectorOptions.value = allSectorOptions.value.slice(0, 50)
+  filteredIndustrySectors.value = industrySectorOptions.value.slice(0, 30)
+  filteredConceptSectors.value = conceptSectorOptions.value.slice(0, 30)
+  filteredAreaSectors.value = areaSectorOptions.value.slice(0, 30)
+  searchForm.sectorType = ''
 }
 
-// 加载全部板块
+// 加载全部板块（分类型）
 const loadAllSectors = async () => {
   sectorLoading.value = true
   try {
-    const res = await getSectorList({pageNum: 1, pageSize: 500})
-    allSectorOptions.value = (res.data?.records || []).map(s => ({
+    // 并行加载三种类型板块
+    const [industryRes, conceptRes, areaRes] = await Promise.all([
+      getSectorList({pageNum: 1, pageSize: 500, sectorType: 'industry'}),
+      getSectorList({pageNum: 1, pageSize: 500, sectorType: 'concept'}),
+      getSectorList({pageNum: 1, pageSize: 500, sectorType: 'area'}),
+    ])
+    industrySectorOptions.value = (industryRes.data?.records || []).map(s => ({
       value: s.sectorCode,
       label: `${s.sectorName} (${s.sectorCode})`,
+      sectorType: 'industry',
     }))
-    filteredSectorOptions.value = allSectorOptions.value.slice(0, 50)
+    conceptSectorOptions.value = (conceptRes.data?.records || []).map(s => ({
+      value: s.sectorCode,
+      label: `${s.sectorName} (${s.sectorCode})`,
+      sectorType: 'concept',
+    }))
+    areaSectorOptions.value = (areaRes.data?.records || []).map(s => ({
+      value: s.sectorCode,
+      label: `${s.sectorName} (${s.sectorCode})`,
+      sectorType: 'area',
+    }))
+    filteredIndustrySectors.value = industrySectorOptions.value.slice(0, 30)
+    filteredConceptSectors.value = conceptSectorOptions.value.slice(0, 30)
+    filteredAreaSectors.value = areaSectorOptions.value.slice(0, 30)
   } catch {
   } finally {
     sectorLoading.value = false
@@ -358,6 +429,9 @@ const addToWatchlist = async (row) => {
 const applyRouteQuery = () => {
   if (route.query.sectorCode) {
     searchForm.sectorCode = route.query.sectorCode
+  }
+  if (route.query.sectorType) {
+    searchForm.sectorType = route.query.sectorType
   }
   if (route.query.minChange) {
     searchForm.minChange = route.query.minChange
@@ -387,6 +461,7 @@ onMounted(async () => {
 watch(() => route.query, (query) => {
   if (query.sectorCode || query.minChange || query.maxChange || query.includeSt) {
     searchForm.sectorCode = query.sectorCode || ''
+    searchForm.sectorType = query.sectorType || ''
     searchForm.minChange = query.minChange || ''
     searchForm.maxChange = query.maxChange || ''
     searchForm.maxChangeInclusive = query.maxChangeInclusive === 'true'
@@ -480,6 +555,31 @@ watch(() => route.query, (query) => {
 .text-green {
   color: #67c23a;
   font-weight: bold;
+}
+
+.sector-tag {
+  display: inline-block;
+  font-size: 12px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-right: 4px;
+  margin-bottom: 2px;
+  line-height: 1.4;
+  &.industry {
+    background-color: #ecf5ff;
+    color: #409eff;
+    border: 1px solid #d9ecff;
+  }
+  &.concept {
+    background-color: #fdf6ec;
+    color: #e6a23c;
+    border: 1px solid #faecd8;
+  }
+  &.area {
+    background-color: #f0f9eb;
+    color: #67c23a;
+    border: 1px solid #e1f3d8;
+  }
 }
 
 .link-btn {

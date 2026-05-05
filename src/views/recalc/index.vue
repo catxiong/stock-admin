@@ -38,8 +38,8 @@
                 <span>股票数据刷新</span>
               </div>
             </template>
-            <p>从新浪财经拉取全量A股行情数据，并同步计算RSI30和量比指标。</p>
-            <p class="sub-text">包含：价格、涨跌幅、换手率、RSI30(Wilder平滑法)、量比(当日/5日均量)</p>
+            <p>从新浪财经拉取全量A股行情数据，同步更新板块分类，并计算RSI30和量比指标。</p>
+            <p class="sub-text">包含：价格、涨跌幅、换手率、板块分类(行业/概念/地区)、RSI30、量比</p>
             <el-button type="warning" @click="recalc('stock')" :loading="loadingMap.stock" :disabled="btnDisabled"
                        style="margin-top: 20px" :icon="Download">
               执行股票数据刷新
