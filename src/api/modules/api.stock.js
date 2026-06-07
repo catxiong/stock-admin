@@ -35,6 +35,31 @@ export function updateWatchlistRemark(params) {
   return service.put('/stock/stock/watchlist/remark', null, params)
 }
 
+// 更新自选股成本价
+export function updateWatchlistCostPrice(params) {
+  return service.put('/stock/stock/watchlist/cost', null, params)
+}
+
+// 更新自选股预期卖出价
+export function updateWatchlistExpectedSellPrice(params) {
+  return service.put('/stock/stock/watchlist/expected-sell-price', null, params)
+}
+
+// 更新自选股持股数
+export function updateWatchlistShareCount(params) {
+  return service.put('/stock/stock/watchlist/share-count', null, params)
+}
+
+// 批量更新自选股数据（成本价、持股数、预期卖出价）
+export function updateWatchlistData(params) {
+  return service.put('/stock/stock/watchlist/data', null, params)
+}
+
+// 根据股票代码获取自选股信息
+export function getWatchlistByStockCode(stockCode) {
+  return service.get(`/stock/stock/watchlist/get/${stockCode}`)
+}
+
 // 刷新自选股行情数据
 export function refreshWatchlist(stockCodes) {
   return service.post('/stock/stock/watchlist/refresh', { stockCodes })

@@ -21,7 +21,7 @@
 
       <!-- 表格 -->
       <el-table :data="tableData" stripe v-loading="loading" highlight-current-row
-                @row-click="handleRowClick" style="cursor: pointer" :max-height="tableMaxHeight">
+                row-key="id" @row-click="handleRowClick" style="cursor: pointer" :max-height="tableMaxHeight">
         <el-table-column prop="stockCode" label="股票代码" width="110"/>
         <el-table-column prop="stockName" label="股票名称" min-width="140"/>
         <el-table-column prop="exchange" label="市场" width="80" align="center">
@@ -47,17 +47,60 @@
             </span>
           </template>
         </el-table-column>
+        <el-table-column prop="costPrice" label="成本价" width="110" align="right">
+          <template #default="{row}">{{ row.costPrice || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="shareCount" label="持股数" width="110" align="right">
+          <template #default="{row}">{{ row.shareCount || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="expectedSellPrice" label="预期卖出价" width="120" align="right">
+          <template #default="{row}">{{ row.expectedSellPrice || '-' }}</template>
+        </el-table-column>
         <el-table-column prop="turnoverRate" label="换手率(%)" width="130" align="right" sortable/>
         <el-table-column prop="addTime" label="添加时间" width="170" align="center"/>
         <el-table-column prop="remark" label="备注" min-width="140">
-          <template #default="{row}">
-            <span v-if="!row._editing">{{ row.remark || '-' }}</span>
-            <el-input v-else v-model="row._remark" size="small" style="width: 120px"
-                      @keyup.enter="saveRemark(row)" @blur="saveRemark(row)"/>
-          </template>
+          <template #default="{row}">{{ row.remark || '-' }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right" align="center">
+        <el-table-column label="操作" width="180" fixed="right" align="center">
           <template #default="{row}">
+            <el-popover placement="left" :width="280" trigger="hover">
+              <template #reference>
+                <el-button type="primary" link size="small" @click.stop="openDataDialog(row)">数据</el-button>
+              </template>
+              <div class="data-popover">
+                <div class="data-row">
+                  <span class="data-label">成本价</span>
+                  <span class="data-value">{{ row.costPrice || '-' }}</span>
+                </div>
+                <div class="data-row">
+                  <span class="data-label">持股数</span>
+                  <span class="data-value">{{ row.shareCount || '-' }}</span>
+                </div>
+                <div class="data-row">
+                  <span class="data-label">预期卖出价</span>
+                  <span class="data-value">{{ row.expectedSellPrice || '-' }}</span>
+                </div>
+                <el-divider style="margin: 8px 0"/>
+                <div class="data-row">
+                  <span class="data-label">盈亏额</span>
+                  <span class="data-value" :class="row.profitLossAmount > 0 ? 'text-red' : row.profitLossAmount < 0 ? 'text-green' : ''">
+                    {{ row.profitLossAmount != null ? (row.profitLossAmount > 0 ? '+' : '') + row.profitLossAmount : '-' }}
+                  </span>
+                </div>
+                <div class="data-row">
+                  <span class="data-label">盈亏率(%)</span>
+                  <span class="data-value" :class="row.profitLossPercent > 0 ? 'text-red' : row.profitLossPercent < 0 ? 'text-green' : ''">
+                    {{ row.profitLossPercent != null ? (row.profitLossPercent > 0 ? '+' : '') + row.profitLossPercent : '-' }}
+                  </span>
+                </div>
+                <div class="data-row">
+                  <span class="data-label">盈亏总额</span>
+                  <span class="data-value" :class="row.profitLossTotal > 0 ? 'text-red' : row.profitLossTotal < 0 ? 'text-green' : ''">
+                    {{ row.profitLossTotal != null ? (row.profitLossTotal > 0 ? '+' : '') + row.profitLossTotal : '-' }}
+                  </span>
+                </div>
+              </div>
+            </el-popover>
             <el-button type="primary" link size="small" @click.stop="editRemark(row)">备注</el-button>
             <el-button type="danger" link size="small" @click.stop="handleRemove(row)">移除</el-button>
           </template>
@@ -88,6 +131,41 @@
       </div>
     </el-card>
 
+    <!-- 数据编辑弹窗 -->
+    <el-dialog v-model="dataDialogVisible" :title="`数据 - ${dataForm.stockName}(${dataForm.stockCode})`" width="460px" destroy-on-close>
+      <el-form :model="dataForm" label-width="80px" class="data-edit-form">
+        <el-form-item label="成本价">
+          <el-input-number v-model="dataForm.costPrice" :precision="2" :min="0" :controls="false" style="width: 100%"/>
+        </el-form-item>
+        <el-form-item label="持股数">
+          <el-input-number v-model="dataForm.shareCount" :min="0" :controls="false" style="width: 100%"/>
+        </el-form-item>
+        <el-form-item label="预期卖出价">
+          <el-input-number v-model="dataForm.expectedSellPrice" :precision="2" :min="0" :controls="false" style="width: 100%"/>
+        </el-form-item>
+        <el-divider style="margin: 4px 0 16px"/>
+        <el-form-item label="盈亏额">
+          <span :class="computedProfitLossAmount > 0 ? 'text-red' : computedProfitLossAmount < 0 ? 'text-green' : ''">
+            {{ computedProfitLossAmount != null ? (computedProfitLossAmount > 0 ? '+' : '') + computedProfitLossAmount : '-' }}
+          </span>
+        </el-form-item>
+        <el-form-item label="盈亏率(%)">
+          <span :class="computedProfitLossPercent > 0 ? 'text-red' : computedProfitLossPercent < 0 ? 'text-green' : ''">
+            {{ computedProfitLossPercent != null ? (computedProfitLossPercent > 0 ? '+' : '') + computedProfitLossPercent : '-' }}
+          </span>
+        </el-form-item>
+        <el-form-item label="盈亏总额">
+          <span :class="computedProfitLossTotal > 0 ? 'text-red' : computedProfitLossTotal < 0 ? 'text-green' : ''">
+            {{ computedProfitLossTotal != null ? (computedProfitLossTotal > 0 ? '+' : '') + computedProfitLossTotal : '-' }}
+          </span>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dataDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="dataSaving" @click="saveData">保存</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 添加自选股弹窗 -->
     <el-dialog v-model="addDialogVisible" title="添加自选股" width="460px" destroy-on-close>
       <el-form :model="addForm" :rules="addRules" ref="addFormRef" label-width="80px">
@@ -96,6 +174,15 @@
         </el-form-item>
         <el-form-item label="股票名称" prop="stockName">
           <el-input v-model="addForm.stockName" placeholder="请输入股票名称"/>
+        </el-form-item>
+        <el-form-item label="成本价">
+          <el-input-number v-model="addForm.costPrice" :precision="2" :min="0" :controls="false" placeholder="可选" style="width: 100%"/>
+        </el-form-item>
+        <el-form-item label="持股数">
+          <el-input-number v-model="addForm.shareCount" :min="0" :controls="false" placeholder="可选" style="width: 100%"/>
+        </el-form-item>
+        <el-form-item label="预期卖出价">
+          <el-input-number v-model="addForm.expectedSellPrice" :precision="2" :min="0" :controls="false" placeholder="可选" style="width: 100%"/>
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="addForm.remark" placeholder="可选，添加备注"/>
@@ -110,7 +197,7 @@
 </template>
 
 <script setup>
-import {getWatchlist, addWatchlist, removeWatchlist, updateWatchlistRemark, refreshWatchlist, exportWatchlist} from '@/api/modules/api.stock'
+import {getWatchlist, addWatchlist, removeWatchlist, updateWatchlistRemark, refreshWatchlist, exportWatchlist, updateWatchlistData} from '@/api/modules/api.stock'
 import {useRouter} from 'vue-router'
 import {Refresh, Plus, TrendCharts, DataLine} from '@element-plus/icons-vue'
 
@@ -121,9 +208,11 @@ const refreshing = ref(false)
 const autoRefreshing = ref(false)
 const addLoading = ref(false)
 const exportLoading = ref(false)
+const dataSaving = ref(false)
 const tableData = ref([])
 const addDialogVisible = ref(false)
 const addFormRef = ref()
+const dataDialogVisible = ref(false)
 const tableMaxHeight = computed(() => window.innerHeight - 280)
 let autoTimer = null
 
@@ -146,6 +235,9 @@ const pagination = reactive({
 const addForm = reactive({
   stockCode: '',
   stockName: '',
+  costPrice: null,
+  shareCount: null,
+  expectedSellPrice: null,
   remark: '',
 })
 
@@ -154,8 +246,40 @@ const addRules = reactive({
   stockName: [{required: true, message: '请输入股票名称', trigger: 'blur'}],
 })
 
+const dataForm = reactive({
+  id: null,
+  stockCode: '',
+  stockName: '',
+  costPrice: null,
+  shareCount: null,
+  expectedSellPrice: null,
+  currentPrice: null,
+})
+
+// 盈亏额 = 现价 - 成本价
+const computedProfitLossAmount = computed(() => {
+  if (dataForm.currentPrice == null || dataForm.costPrice == null) return null
+  return +(dataForm.currentPrice - dataForm.costPrice).toFixed(2)
+})
+
+// 盈亏率(%) = (现价 - 成本价) / 成本价 * 100
+const computedProfitLossPercent = computed(() => {
+  if (dataForm.currentPrice == null || dataForm.costPrice == null || dataForm.costPrice === 0) return null
+  return +((dataForm.currentPrice - dataForm.costPrice) / dataForm.costPrice * 100).toFixed(2)
+})
+
+// 盈亏总额 = 盈亏额 * 持股数
+const computedProfitLossTotal = computed(() => {
+  if (computedProfitLossAmount.value == null || dataForm.shareCount == null) return null
+  return +(computedProfitLossAmount.value * dataForm.shareCount).toFixed(2)
+})
+
 // 获取当前页面所有股票代码
 const getStockCodes = () => tableData.value.map(r => r.stockCode).filter(Boolean)
+
+const handleRowClick = (row) => {
+  router.push({path: '/stock-detail', query: {stockCode: row.stockCode}})
+}
 
 // 刷新行情数据（调后端）
 const doRefresh = async () => {
@@ -174,16 +298,11 @@ const doRefresh = async () => {
 
 // 点击重计算按钮
 const handleRefresh = async () => {
-  // 如果正在自动刷新，点击则停止
   if (autoRefreshing.value) {
     stopAutoRefresh()
     return
   }
-
-  // 先执行一次刷新
   await doRefresh()
-
-  // 如果选了刷新频率，开启自动刷新
   if (refreshInterval.value) {
     autoRefreshing.value = true
     autoTimer = setInterval(() => {
@@ -204,42 +323,13 @@ const fetchData = async () => {
   loading.value = true
   try {
     const res = await getWatchlist({pageNum: pagination.pageNum, pageSize: pagination.pageSize})
-    const records = (res.data?.records || []).map(r => ({...r, _editing: false, _remark: r.remark || ''}))
-    tableData.value = records
+    tableData.value = res.data?.records || []
     pagination.total = res.data?.total || 0
   } catch (e) {
     console.error(e)
   } finally {
     loading.value = false
   }
-}
-
-const handleRowClick = (row) => {
-  router.push({path: '/stock-detail', query: {stockCode: row.stockCode}})
-}
-
-const showAddDialog = () => {
-  addForm.stockCode = ''
-  addForm.stockName = ''
-  addForm.remark = ''
-  addDialogVisible.value = true
-}
-
-const handleAdd = () => {
-  addFormRef.value.validate(async (valid) => {
-    if (!valid) return
-    addLoading.value = true
-    try {
-      await addWatchlist({stockCode: addForm.stockCode, stockName: addForm.stockName, remark: addForm.remark})
-      ElMessage.success('添加成功')
-      addDialogVisible.value = false
-      fetchData()
-    } catch (e) {
-      ElMessage.error('添加失败，可能已存在该自选股')
-    } finally {
-      addLoading.value = false
-    }
-  })
 }
 
 const handleRemove = async (row) => {
@@ -253,22 +343,86 @@ const handleRemove = async (row) => {
   }
 }
 
-const editRemark = (row) => {
-  row._editing = true
-  row._remark = row.remark || ''
+// 数据弹框
+const openDataDialog = (row) => {
+  dataForm.id = row.id
+  dataForm.stockCode = row.stockCode
+  dataForm.stockName = row.stockName
+  dataForm.costPrice = row.costPrice
+  dataForm.shareCount = row.shareCount
+  dataForm.expectedSellPrice = row.expectedSellPrice
+  dataForm.currentPrice = row.currentPrice
+  dataDialogVisible.value = true
 }
 
-const saveRemark = async (row) => {
-  if (!row._editing) return
-  row._editing = false
-  if (row._remark === (row.remark || '')) return
+const saveData = async () => {
+  dataSaving.value = true
   try {
-    await updateWatchlistRemark({id: row.id, remark: row._remark})
-    row.remark = row._remark
-    ElMessage.success('备注已更新')
+    await updateWatchlistData({
+      id: dataForm.id,
+      costPrice: dataForm.costPrice,
+      shareCount: dataForm.shareCount,
+      expectedSellPrice: dataForm.expectedSellPrice,
+    })
+    ElMessage.success('数据已保存')
+    dataDialogVisible.value = false
+    fetchData()
   } catch {
-    row._remark = row.remark || ''
+    ElMessage.error('保存失败')
+  } finally {
+    dataSaving.value = false
   }
+}
+
+// 备注编辑
+const editRemark = (row) => {
+  ElMessageBox.prompt('修改备注', '备注', {
+    inputValue: row.remark || '',
+    confirmButtonText: '保存',
+    cancelButtonText: '取消',
+  }).then(async ({value}) => {
+    try {
+      await updateWatchlistRemark({id: row.id, remark: value})
+      ElMessage.success('备注已更新')
+      fetchData()
+    } catch {
+      ElMessage.error('更新失败')
+    }
+  }).catch(() => {})
+}
+
+const showAddDialog = () => {
+  addForm.stockCode = ''
+  addForm.stockName = ''
+  addForm.costPrice = null
+  addForm.shareCount = null
+  addForm.expectedSellPrice = null
+  addForm.remark = ''
+  addDialogVisible.value = true
+}
+
+const handleAdd = () => {
+  addFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    addLoading.value = true
+    try {
+      await addWatchlist({
+        stockCode: addForm.stockCode,
+        stockName: addForm.stockName,
+        costPrice: addForm.costPrice,
+        shareCount: addForm.shareCount,
+        expectedSellPrice: addForm.expectedSellPrice,
+        remark: addForm.remark,
+      })
+      ElMessage.success('添加成功')
+      addDialogVisible.value = false
+      fetchData()
+    } catch (e) {
+      ElMessage.error('添加失败，可能已存在该自选股')
+    } finally {
+      addLoading.value = false
+    }
+  })
 }
 
 const handleExport = async () => {
@@ -308,13 +462,38 @@ onUnmounted(() => stopAutoRefresh())
   }
 }
 
-.text-red { color: #f56c6c; }
-.text-green { color: #67c23a; }
+.text-red { color: #f56c6c; font-weight: bold; }
+.text-green { color: #67c23a; font-weight: bold; }
 
 .pagination-box {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.data-popover {
+  .data-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+
+    .data-label {
+      color: #909399;
+      font-size: 13px;
+    }
+
+    .data-value {
+      font-size: 13px;
+      font-weight: 500;
+    }
+  }
+}
+
+.data-edit-form {
+  :deep(.el-form-item) {
+    margin-bottom: 22px;
+  }
 }
 
 .link-btn {

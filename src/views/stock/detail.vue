@@ -86,6 +86,37 @@
               </el-descriptions>
             </el-card>
           </el-col>
+          <el-col :span="8">
+            <el-card shadow="hover" v-if="watchlistInfo">
+              <template #header><span>持仓信息</span></template>
+              <el-descriptions :column="1" border size="small">
+                <el-descriptions-item label="成本价">{{ watchlistInfo.costPrice || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="持股数">{{ watchlistInfo.shareCount || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="预期卖出价">{{ watchlistInfo.expectedSellPrice || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="盈亏额">
+                  <span :class="priceClass(watchlistInfo.profitLossAmount)">
+                    {{ formatProfit(watchlistInfo.profitLossAmount) }}
+                  </span>
+                </el-descriptions-item>
+                <el-descriptions-item label="盈亏率(%)">
+                  <span :class="priceClass(watchlistInfo.profitLossPercent)">
+                    {{ formatProfit(watchlistInfo.profitLossPercent) }}
+                  </span>
+                </el-descriptions-item>
+                <el-descriptions-item label="盈亏总额">
+                  <span :class="priceClass(watchlistInfo.profitLossTotal)">
+                    {{ formatProfit(watchlistInfo.profitLossTotal) }}
+                  </span>
+                </el-descriptions-item>
+              </el-descriptions>
+            </el-card>
+            <el-card shadow="hover" v-else>
+              <template #header><span>持仓信息</span></template>
+              <div style="color: #909399; text-align: center; padding: 10px 0;">
+                该股票未加入自选股
+              </div>
+            </el-card>
+          </el-col>
         </el-row>
       </template>
     </div>
@@ -93,13 +124,15 @@
 </template>
 
 <script setup>
-import {getAShareList, addWatchlist} from '@/api/modules/api.stock'
+import {getAShareList, addWatchlist, getWatchlistByStockCode} from '@/api/modules/api.stock'
 import {useRoute, useRouter} from 'vue-router'
+import {Star} from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
 const stockInfo = ref({})
+const watchlistInfo = ref(null)
 
 const goBack = () => {
   router.back()
@@ -109,6 +142,7 @@ const addToWatchlist = async () => {
   try {
     await addWatchlist({stockCode: stockInfo.value.stockCode, stockName: stockInfo.value.stockName})
     ElMessage.success(`${stockInfo.value.stockName} 已加入自选`)
+    fetchWatchlistInfo(stockInfo.value.stockCode)
   } catch {
     ElMessage.warning('添加失败，可能已在自选股中')
   }
@@ -118,6 +152,11 @@ const priceClass = (val) => {
   if (val > 0) return 'text-red'
   if (val < 0) return 'text-green'
   return ''
+}
+
+const formatProfit = (val) => {
+  if (val == null) return '-'
+  return (val > 0 ? '+' : '') + val
 }
 
 const fetchStock = async (stockCode) => {
@@ -136,11 +175,27 @@ const fetchStock = async (stockCode) => {
   }
 }
 
-onMounted(() => fetchStock(route.query.stockCode))
+const fetchWatchlistInfo = async (stockCode) => {
+  if (!stockCode) return
+  try {
+    const res = await getWatchlistByStockCode(stockCode)
+    watchlistInfo.value = res.data || null
+  } catch (e) {
+    watchlistInfo.value = null
+  }
+}
 
-// keep-alive 缓存后，路由参数变化时需要重新加载数据
+onMounted(() => {
+  const stockCode = route.query.stockCode
+  fetchStock(stockCode)
+  fetchWatchlistInfo(stockCode)
+})
+
 watch(() => route.query.stockCode, (newCode) => {
-  if (newCode) fetchStock(newCode)
+  if (newCode) {
+    fetchStock(newCode)
+    fetchWatchlistInfo(newCode)
+  }
 })
 </script>
 
