@@ -20,6 +20,11 @@
                     {{ stockInfo.exchange === 'SH' ? '上海' : '深圳' }}
                   </el-tag>
                 </el-descriptions-item>
+                <el-descriptions-item label="类型">
+                  <el-tag :type="stockInfo.stockType === 'etf' ? 'warning' : ''" size="small">
+                    {{ stockInfo.stockType === 'etf' ? 'ETF' : '股票' }}
+                  </el-tag>
+                </el-descriptions-item>
                 <el-descriptions-item label="所属板块">{{ stockInfo.sectorName }}</el-descriptions-item>
                 <el-descriptions-item label="交易日期">{{ stockInfo.tradeDate }}</el-descriptions-item>
               </el-descriptions>

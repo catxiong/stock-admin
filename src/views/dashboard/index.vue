@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard">
     <el-row :gutter="24">
-      <el-col :span="6" v-for="item in statCards" :key="item.label">
+      <el-col :span="4" v-for="item in statCards" :key="item.label">
         <el-card shadow="hover" class="stat-card clickable" @click="item.action">
           <div class="stat-content">
             <div class="stat-info">
@@ -111,9 +111,11 @@ const changeRanges = [
 const statCards = ref([
   {label: '股票总数', value: '-', icon: 'TrendCharts', color: '#409eff',
     action: () => router.push('/stock/list')},
+  {label: 'ETF总数', value: '-', icon: 'Coin', color: '#e6a23c',
+    action: () => router.push({path: '/stock/list', query: {stockType: 'etf'}})},
   {label: '行业板块', value: '-', icon: 'DataBoard', color: '#67c23a',
     action: () => router.push({path: '/sector/list', query: {sectorType: 'industry'}})},
-  {label: '概念板块', value: '-', icon: 'Collection', color: '#e6a23c',
+  {label: '概念板块', value: '-', icon: 'Collection', color: '#f0a020',
     action: () => router.push({path: '/sector/list', query: {sectorType: 'concept'}})},
   {label: '地区板块', value: '-', icon: 'Location', color: '#f56c6c',
     action: () => router.push({path: '/sector/list', query: {sectorType: 'area'}})},
@@ -225,17 +227,19 @@ function renderChart(labels, counts) {
 
 onMounted(async () => {
   try {
-    const [stockRes, industryRes, conceptRes, areaRes, distRes] = await Promise.all([
-      getAShareList({pageNum: 1, pageSize: 1, includeSt: true}),
+    const [stockRes, etfRes, industryRes, conceptRes, areaRes, distRes] = await Promise.all([
+      getAShareList({pageNum: 1, pageSize: 1, includeSt: true, stockType: 'stock'}),
+      getAShareList({pageNum: 1, pageSize: 1, includeSt: true, stockType: 'etf'}),
       getSectorList({pageNum: 1, pageSize: 1, sectorType: 'industry'}),
       getSectorList({pageNum: 1, pageSize: 1, sectorType: 'concept'}),
       getSectorList({pageNum: 1, pageSize: 1, sectorType: 'area'}),
       getPriceChangeDistribution(),
     ])
     statCards.value[0].value = stockRes.data?.total ?? '-'
-    statCards.value[1].value = industryRes.data?.total ?? '-'
-    statCards.value[2].value = conceptRes.data?.total ?? '-'
-    statCards.value[3].value = areaRes.data?.total ?? '-'
+    statCards.value[1].value = etfRes.data?.total ?? '-'
+    statCards.value[2].value = industryRes.data?.total ?? '-'
+    statCards.value[3].value = conceptRes.data?.total ?? '-'
+    statCards.value[4].value = areaRes.data?.total ?? '-'
 
     const labels = distRes.data?.labels || []
     const counts = distRes.data?.counts || []

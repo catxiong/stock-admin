@@ -26,6 +26,12 @@
               </el-option-group>
             </el-select>
           </el-form-item>
+          <el-form-item label="类型">
+            <el-select v-model="searchForm.stockType" placeholder="全部" clearable>
+              <el-option label="股票" value="stock"/>
+              <el-option label="ETF" value="etf"/>
+            </el-select>
+          </el-form-item>
           <!-- 折叠区域 -->
           <template v-if="searchExpanded">
             <el-form-item label="涨跌幅%">
@@ -99,6 +105,13 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column prop="stockType" label="类型" width="80" align="center">
+          <template #default="{row}">
+            <el-tag :type="row.stockType === 'etf' ? 'warning' : ''" size="small">
+              {{ row.stockType === 'etf' ? 'ETF' : '股票' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="所属板块" min-width="200">
           <template #default="{row}">
             <span v-if="row.industrySectorName" class="sector-tag industry">{{ row.industrySectorName }}</span>
@@ -135,7 +148,9 @@
             <a :href="`https://quote.eastmoney.com/concept/${row.exchange}${row.stockCode}.html`"
                target="_blank" class="link-btn eastrich" @click.stop>
               <el-icon size="16"><TrendCharts/></el-icon>EastRich</a>
-            <a :href="`https://finance.baidu.com/stock/ab-${row.stockCode}`"
+            <a :href="row.stockType === 'etf'
+                  ? `https://finance.baidu.com/etf/ab-${row.stockCode}`
+                  : `https://finance.baidu.com/stock/ab-${row.stockCode}`"
                target="_blank" class="link-btn finscope" @click.stop>
               <el-icon size="16"><DataLine/></el-icon>FinScope</a>
           </template>
@@ -200,6 +215,7 @@ const searchForm = reactive({
   stockName: '',
   sectorCode: '',
   sectorType: '',
+  stockType: '',
   minChange: '',
   maxChange: '',
   maxChangeInclusive: false,
@@ -235,6 +251,7 @@ const fetchData = async () => {
       // 传递板块类型以便后端精确匹配
       if (searchForm.sectorType) params.sectorType = searchForm.sectorType
     }
+    if (searchForm.stockType) params.stockType = searchForm.stockType
     if (searchForm.minChange !== '' && searchForm.minChange !== null) params.minChange = searchForm.minChange
     if (searchForm.maxChange !== '' && searchForm.maxChange !== null) params.maxChange = searchForm.maxChange
     if (searchForm.maxChangeInclusive) params.maxChangeInclusive = true
@@ -284,6 +301,7 @@ const handleExport = async () => {
       params.sectorCode = searchForm.sectorCode
       if (searchForm.sectorType) params.sectorType = searchForm.sectorType
     }
+    if (searchForm.stockType) params.stockType = searchForm.stockType
     if (searchForm.minChange !== '' && searchForm.minChange !== null) params.minChange = searchForm.minChange
     if (searchForm.maxChange !== '' && searchForm.maxChange !== null) params.maxChange = searchForm.maxChange
     if (searchForm.maxChangeInclusive) params.maxChangeInclusive = true
@@ -322,6 +340,7 @@ const resetSearch = () => {
   searchForm.stockName = ''
   searchForm.sectorCode = ''
   searchForm.sectorType = ''
+  searchForm.stockType = ''
   searchForm.minChange = ''
   searchForm.maxChange = ''
   searchForm.maxChangeInclusive = false
@@ -433,6 +452,9 @@ const applyRouteQuery = () => {
   if (route.query.sectorType) {
     searchForm.sectorType = route.query.sectorType
   }
+  if (route.query.stockType) {
+    searchForm.stockType = route.query.stockType
+  }
   if (route.query.minChange) {
     searchForm.minChange = route.query.minChange
   }
@@ -459,9 +481,10 @@ onMounted(async () => {
 
 // keep-alive 缓存后，监听路由变化处理跳转
 watch(() => route.query, (query) => {
-  if (query.sectorCode || query.minChange || query.maxChange || query.includeSt) {
+  if (query.sectorCode || query.minChange || query.maxChange || query.includeSt || query.stockType) {
     searchForm.sectorCode = query.sectorCode || ''
     searchForm.sectorType = query.sectorType || ''
+    searchForm.stockType = query.stockType || ''
     searchForm.minChange = query.minChange || ''
     searchForm.maxChange = query.maxChange || ''
     searchForm.maxChangeInclusive = query.maxChangeInclusive === 'true'

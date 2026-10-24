@@ -110,7 +110,9 @@
             <a :href="`https://quote.eastmoney.com/concept/${row.exchange}${row.stockCode}.html`"
                target="_blank" class="link-btn eastrich" @click.stop>
               <el-icon size="16"><TrendCharts/></el-icon>EastRich</a>
-            <a :href="`https://finance.baidu.com/stock/ab-${row.stockCode}`"
+            <a :href="row.stockType === 'etf'
+                  ? `https://finance.baidu.com/etf/ab-${row.stockCode}`
+                  : `https://finance.baidu.com/stock/ab-${row.stockCode}`"
                target="_blank" class="link-btn finscope" @click.stop>
               <el-icon size="16"><DataLine/></el-icon>FinScope</a>
           </template>
@@ -170,7 +172,7 @@
     <el-dialog v-model="addDialogVisible" title="添加自选股" width="460px" destroy-on-close>
       <el-form :model="addForm" :rules="addRules" ref="addFormRef" label-width="80px">
         <el-form-item label="股票代码" prop="stockCode">
-          <el-input v-model="addForm.stockCode" placeholder="请输入股票代码，如 600000"/>
+          <el-input v-model="addForm.stockCode" placeholder="请输入代码，如 600000 或 510300"/>
         </el-form-item>
         <el-form-item label="股票名称" prop="stockName">
           <el-input v-model="addForm.stockName" placeholder="请输入股票名称"/>

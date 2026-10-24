@@ -11,19 +11,22 @@ const constantRoutes = [
         path: '/dashboard',
         component: () => import('@/views/dashboard/index.vue'),
         name: 'dashboard',
-        meta: {title: '工作台', icon: 'HomeFilled', requiresAuth: true},
+        // 工作台
+        meta: {title: 'Dashboard', icon: 'HomeFilled', requiresAuth: true},
       },
       {
         path: '/sector/list',
         component: () => import('@/views/sector/index.vue'),
         name: 'sector-list',
-        meta: {title: '板块模块', icon: 'DataBoard', requiresAuth: true},
+        // 板块模块
+        meta: {title: 'Sectors', icon: 'DataBoard', requiresAuth: true},
       },
       {
         path: '/stock/list',
         component: () => import('@/views/stock/index.vue'),
         name: 'stock-list',
-        meta: {title: '全股模块', icon: 'TrendCharts', requiresAuth: true},
+        // 全股模块
+        meta: {title: 'All Stocks', icon: 'TrendCharts', requiresAuth: true},
       },
       {
         path: '/stock-detail',
@@ -35,13 +38,15 @@ const constantRoutes = [
         path: '/watchlist',
         component: () => import('@/views/watchlist/index.vue'),
         name: 'watchlist',
-        meta: {title: '自选股', icon: 'Star', requiresAuth: true},
+        // 自选股
+        meta: {title: 'Watchlist', icon: 'Star', requiresAuth: true},
       },
       {
         path: '/recalc',
         component: () => import('@/views/recalc/index.vue'),
         name: 'recalc',
-        meta: {title: '重计算模块', icon: 'Refresh', requiresAuth: true},
+        // 重计算模块
+        meta: {title: 'Recalculation', icon: 'Refresh', requiresAuth: true},
       },
     ],
   },
