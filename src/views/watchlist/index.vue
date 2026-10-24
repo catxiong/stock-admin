@@ -110,7 +110,7 @@
             <a :href="`https://quote.eastmoney.com/concept/${row.exchange}${row.stockCode}.html`"
                target="_blank" class="link-btn eastrich" @click.stop>
               <el-icon size="16"><TrendCharts/></el-icon>EastRich</a>
-            <a :href="row.stockType === 'etf'
+            <a :href="row.stockName.includes('ETF')
                   ? `https://finance.baidu.com/etf/ab-${row.stockCode}`
                   : `https://finance.baidu.com/stock/ab-${row.stockCode}`"
                target="_blank" class="link-btn finscope" @click.stop>
