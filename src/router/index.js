@@ -23,7 +23,7 @@ router.beforeEach((to, from, next) => {
 })
 
 router.afterEach(to => {
-  document.title = `${to.meta.title || ''} | A股数据平台`
+  document.title = `${to.meta.title || ''} | A-Share Data Platform`
 })
 
 export default router

@@ -32,11 +32,13 @@
           </template>
         </el-table-column>
         <el-table-column prop="sectorName" label="所属板块" min-width="140"/>
-        <el-table-column prop="currentPrice" label="现价" width="100" align="right" sortable/>
+        <el-table-column prop="currentPrice" label="现价" width="100" align="right" sortable>
+          <template #default="{row}">{{ formatPrice(row.currentPrice) }}</template>
+        </el-table-column>
         <el-table-column prop="priceChange" label="涨跌额" width="120" align="right" sortable>
           <template #default="{row}">
             <span :class="row.priceChange > 0 ? 'text-red' : row.priceChange < 0 ? 'text-green' : ''">
-              {{ row.priceChange > 0 ? '+' : '' }}{{ row.priceChange }}
+              {{ row.priceChange > 0 ? '+' : '' }}{{ formatPrice(row.priceChange) }}
             </span>
           </template>
         </el-table-column>
@@ -48,13 +50,13 @@
           </template>
         </el-table-column>
         <el-table-column prop="costPrice" label="成本价" width="110" align="right">
-          <template #default="{row}">{{ row.costPrice || '-' }}</template>
+          <template #default="{row}">{{ formatPrice(row.costPrice) || '-' }}</template>
         </el-table-column>
         <el-table-column prop="shareCount" label="持股数" width="110" align="right">
           <template #default="{row}">{{ row.shareCount || '-' }}</template>
         </el-table-column>
         <el-table-column prop="expectedSellPrice" label="预期卖出价" width="120" align="right">
-          <template #default="{row}">{{ row.expectedSellPrice || '-' }}</template>
+          <template #default="{row}">{{ formatPrice(row.expectedSellPrice) || '-' }}</template>
         </el-table-column>
         <el-table-column prop="turnoverRate" label="换手率(%)" width="130" align="right" sortable/>
         <el-table-column prop="addTime" label="添加时间" width="170" align="center"/>
@@ -70,7 +72,7 @@
               <div class="data-popover">
                 <div class="data-row">
                   <span class="data-label">成本价</span>
-                  <span class="data-value">{{ row.costPrice || '-' }}</span>
+                  <span class="data-value">{{ formatPrice(row.costPrice) || '-' }}</span>
                 </div>
                 <div class="data-row">
                   <span class="data-label">持股数</span>
@@ -78,13 +80,13 @@
                 </div>
                 <div class="data-row">
                   <span class="data-label">预期卖出价</span>
-                  <span class="data-value">{{ row.expectedSellPrice || '-' }}</span>
+                  <span class="data-value">{{ formatPrice(row.expectedSellPrice) || '-' }}</span>
                 </div>
                 <el-divider style="margin: 8px 0"/>
                 <div class="data-row">
                   <span class="data-label">盈亏额</span>
                   <span class="data-value" :class="row.profitLossAmount > 0 ? 'text-red' : row.profitLossAmount < 0 ? 'text-green' : ''">
-                    {{ row.profitLossAmount != null ? (row.profitLossAmount > 0 ? '+' : '') + row.profitLossAmount : '-' }}
+                    {{ row.profitLossAmount != null ? (row.profitLossAmount > 0 ? '+' : '') + formatPrice(row.profitLossAmount) : '-' }}
                   </span>
                 </div>
                 <div class="data-row">
@@ -96,7 +98,7 @@
                 <div class="data-row">
                   <span class="data-label">盈亏总额</span>
                   <span class="data-value" :class="row.profitLossTotal > 0 ? 'text-red' : row.profitLossTotal < 0 ? 'text-green' : ''">
-                    {{ row.profitLossTotal != null ? (row.profitLossTotal > 0 ? '+' : '') + row.profitLossTotal : '-' }}
+                    {{ row.profitLossTotal != null ? (row.profitLossTotal > 0 ? '+' : '') + formatPrice(row.profitLossTotal) : '-' }}
                   </span>
                 </div>
               </div>
@@ -137,18 +139,18 @@
     <el-dialog v-model="dataDialogVisible" :title="`数据 - ${dataForm.stockName}(${dataForm.stockCode})`" width="460px" destroy-on-close>
       <el-form :model="dataForm" label-width="80px" class="data-edit-form">
         <el-form-item label="成本价">
-          <el-input-number v-model="dataForm.costPrice" :precision="2" :min="0" :controls="false" style="width: 100%"/>
+          <el-input-number v-model="dataForm.costPrice" :precision="4" :min="0" :controls="false" style="width: 100%"/>
         </el-form-item>
         <el-form-item label="持股数">
           <el-input-number v-model="dataForm.shareCount" :min="0" :controls="false" style="width: 100%"/>
         </el-form-item>
         <el-form-item label="预期卖出价">
-          <el-input-number v-model="dataForm.expectedSellPrice" :precision="2" :min="0" :controls="false" style="width: 100%"/>
+          <el-input-number v-model="dataForm.expectedSellPrice" :precision="4" :min="0" :controls="false" style="width: 100%"/>
         </el-form-item>
         <el-divider style="margin: 4px 0 16px"/>
         <el-form-item label="盈亏额">
           <span :class="computedProfitLossAmount > 0 ? 'text-red' : computedProfitLossAmount < 0 ? 'text-green' : ''">
-            {{ computedProfitLossAmount != null ? (computedProfitLossAmount > 0 ? '+' : '') + computedProfitLossAmount : '-' }}
+            {{ computedProfitLossAmount != null ? (computedProfitLossAmount > 0 ? '+' : '') + formatPrice(computedProfitLossAmount) : '-' }}
           </span>
         </el-form-item>
         <el-form-item label="盈亏率(%)">
@@ -158,7 +160,7 @@
         </el-form-item>
         <el-form-item label="盈亏总额">
           <span :class="computedProfitLossTotal > 0 ? 'text-red' : computedProfitLossTotal < 0 ? 'text-green' : ''">
-            {{ computedProfitLossTotal != null ? (computedProfitLossTotal > 0 ? '+' : '') + computedProfitLossTotal : '-' }}
+            {{ computedProfitLossTotal != null ? (computedProfitLossTotal > 0 ? '+' : '') + formatPrice(computedProfitLossTotal) : '-' }}
           </span>
         </el-form-item>
       </el-form>
@@ -178,13 +180,13 @@
           <el-input v-model="addForm.stockName" placeholder="请输入股票名称"/>
         </el-form-item>
         <el-form-item label="成本价">
-          <el-input-number v-model="addForm.costPrice" :precision="2" :min="0" :controls="false" placeholder="可选" style="width: 100%"/>
+          <el-input-number v-model="addForm.costPrice" :precision="4" :min="0" :controls="false" placeholder="可选" style="width: 100%"/>
         </el-form-item>
         <el-form-item label="持股数">
           <el-input-number v-model="addForm.shareCount" :min="0" :controls="false" placeholder="可选" style="width: 100%"/>
         </el-form-item>
         <el-form-item label="预期卖出价">
-          <el-input-number v-model="addForm.expectedSellPrice" :precision="2" :min="0" :controls="false" placeholder="可选" style="width: 100%"/>
+          <el-input-number v-model="addForm.expectedSellPrice" :precision="4" :min="0" :controls="false" placeholder="可选" style="width: 100%"/>
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="addForm.remark" placeholder="可选，添加备注"/>
@@ -202,6 +204,7 @@
 import {getWatchlist, addWatchlist, removeWatchlist, updateWatchlistRemark, refreshWatchlist, exportWatchlist, updateWatchlistData} from '@/api/modules/api.stock'
 import {useRouter} from 'vue-router'
 import {Refresh, Plus, TrendCharts, DataLine} from '@element-plus/icons-vue'
+import {formatPrice} from '@/utils/format'
 
 const router = useRouter()
 
@@ -261,7 +264,7 @@ const dataForm = reactive({
 // 盈亏额 = 现价 - 成本价
 const computedProfitLossAmount = computed(() => {
   if (dataForm.currentPrice == null || dataForm.costPrice == null) return null
-  return +(dataForm.currentPrice - dataForm.costPrice).toFixed(2)
+  return +(dataForm.currentPrice - dataForm.costPrice).toFixed(4)
 })
 
 // 盈亏率(%) = (现价 - 成本价) / 成本价 * 100
@@ -273,7 +276,7 @@ const computedProfitLossPercent = computed(() => {
 // 盈亏总额 = 盈亏额 * 持股数
 const computedProfitLossTotal = computed(() => {
   if (computedProfitLossAmount.value == null || dataForm.shareCount == null) return null
-  return +(computedProfitLossAmount.value * dataForm.shareCount).toFixed(2)
+  return +(computedProfitLossAmount.value * dataForm.shareCount).toFixed(4)
 })
 
 // 获取当前页面所有股票代码

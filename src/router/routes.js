@@ -1,3 +1,5 @@
+import {RouterView} from 'vue-router'
+
 export const Layout = () => import('@/layout/index.vue')
 
 const constantRoutes = [
@@ -47,6 +49,22 @@ const constantRoutes = [
         name: 'recalc',
         // 重计算模块
         meta: {title: 'Recalculation', icon: 'Refresh', requiresAuth: true},
+      },
+      {
+        path: '/user-config',
+        name: 'user-config',
+        component: RouterView,
+        redirect: '/user-config/mail',
+        // User Settings
+        meta: {title: 'User Settings', icon: 'Setting'},
+        children: [
+          {
+            path: '/user-config/mail',
+            component: () => import('@/views/user-config/mail-config.vue'),
+            name: 'mail-config',
+            meta: {title: '提醒邮箱配置', icon: 'Message', requiresAuth: true},
+          },
+        ],
       },
     ],
   },

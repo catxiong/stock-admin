@@ -2,7 +2,7 @@
   <section class="login-box">
     <div class="login-card">
       <div class="login-header">
-        <h1>A股数据平台</h1>
+        <h1>A-Share Data Platform</h1>
         <p>登录您的账户</p>
       </div>
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top" size="large">

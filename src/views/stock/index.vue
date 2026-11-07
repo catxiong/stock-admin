@@ -119,11 +119,13 @@
             <span v-if="row.areaSectorName" class="sector-tag area">{{ row.areaSectorName }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="currentPrice" label="现价" width="100" align="right"/>
+        <el-table-column prop="currentPrice" label="现价" width="100" align="right">
+          <template #default="{row}">{{ formatPrice(row.currentPrice) }}</template>
+        </el-table-column>
         <el-table-column prop="priceChange" label="涨跌额" width="120" align="right">
           <template #default="{row}">
             <span :class="row.priceChange > 0 ? 'text-red' : row.priceChange < 0 ? 'text-green' : ''">
-              {{ row.priceChange > 0 ? '+' : '' }}{{ row.priceChange }}
+              {{ row.priceChange > 0 ? '+' : '' }}{{ formatPrice(row.priceChange) }}
             </span>
           </template>
         </el-table-column>
@@ -177,6 +179,7 @@
 import {getAShareList, getSectorList, addWatchlist, exportStocks} from '@/api/modules/api.stock'
 import {useRoute, useRouter} from 'vue-router'
 import SortBar from '@/components/SortBar.vue'
+import {formatPrice} from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()

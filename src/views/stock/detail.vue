@@ -35,11 +35,11 @@
               <template #header><span>价格信息</span></template>
               <el-descriptions :column="1" border size="small">
                 <el-descriptions-item label="当前价格">
-                  <span class="price">{{ stockInfo.currentPrice }}</span>
+                  <span class="price">{{ formatPrice(stockInfo.currentPrice) }}</span>
                 </el-descriptions-item>
                 <el-descriptions-item label="涨跌额">
                   <span :class="priceClass(stockInfo.priceChange)">
-                    {{ stockInfo.priceChange > 0 ? '+' : '' }}{{ stockInfo.priceChange }}
+                    {{ stockInfo.priceChange > 0 ? '+' : '' }}{{ formatPrice(stockInfo.priceChange) }}
                   </span>
                 </el-descriptions-item>
                 <el-descriptions-item label="涨跌幅(%)">
@@ -54,10 +54,10 @@
             <el-card shadow="hover">
               <template #header><span>区间价格</span></template>
               <el-descriptions :column="1" border size="small">
-                <el-descriptions-item label="年内最高">{{ stockInfo.yearHighPrice }}</el-descriptions-item>
-                <el-descriptions-item label="年内最低">{{ stockInfo.yearLowPrice }}</el-descriptions-item>
-                <el-descriptions-item label="月内最高">{{ stockInfo.monthHighPrice }}</el-descriptions-item>
-                <el-descriptions-item label="月内最低">{{ stockInfo.monthLowPrice }}</el-descriptions-item>
+                <el-descriptions-item label="年内最高">{{ formatPrice(stockInfo.yearHighPrice) }}</el-descriptions-item>
+                <el-descriptions-item label="年内最低">{{ formatPrice(stockInfo.yearLowPrice) }}</el-descriptions-item>
+                <el-descriptions-item label="月内最高">{{ formatPrice(stockInfo.monthHighPrice) }}</el-descriptions-item>
+                <el-descriptions-item label="月内最低">{{ formatPrice(stockInfo.monthLowPrice) }}</el-descriptions-item>
               </el-descriptions>
             </el-card>
           </el-col>
@@ -95,12 +95,12 @@
             <el-card shadow="hover" v-if="watchlistInfo">
               <template #header><span>持仓信息</span></template>
               <el-descriptions :column="1" border size="small">
-                <el-descriptions-item label="成本价">{{ watchlistInfo.costPrice || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="成本价">{{ formatPrice(watchlistInfo.costPrice) || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="持股数">{{ watchlistInfo.shareCount || '-' }}</el-descriptions-item>
-                <el-descriptions-item label="预期卖出价">{{ watchlistInfo.expectedSellPrice || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="预期卖出价">{{ formatPrice(watchlistInfo.expectedSellPrice) || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="盈亏额">
                   <span :class="priceClass(watchlistInfo.profitLossAmount)">
-                    {{ formatProfit(watchlistInfo.profitLossAmount) }}
+                    {{ formatProfitAmount(watchlistInfo.profitLossAmount) }}
                   </span>
                 </el-descriptions-item>
                 <el-descriptions-item label="盈亏率(%)">
@@ -110,7 +110,7 @@
                 </el-descriptions-item>
                 <el-descriptions-item label="盈亏总额">
                   <span :class="priceClass(watchlistInfo.profitLossTotal)">
-                    {{ formatProfit(watchlistInfo.profitLossTotal) }}
+                    {{ formatProfitAmount(watchlistInfo.profitLossTotal) }}
                   </span>
                 </el-descriptions-item>
               </el-descriptions>
@@ -132,6 +132,7 @@
 import {getAShareList, addWatchlist, getWatchlistByStockCode} from '@/api/modules/api.stock'
 import {useRoute, useRouter} from 'vue-router'
 import {Star} from '@element-plus/icons-vue'
+import {formatPrice} from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -162,6 +163,11 @@ const priceClass = (val) => {
 const formatProfit = (val) => {
   if (val == null) return '-'
   return (val > 0 ? '+' : '') + val
+}
+
+const formatProfitAmount = (val) => {
+  if (val == null) return '-'
+  return (val > 0 ? '+' : '') + formatPrice(val)
 }
 
 const fetchStock = async (stockCode) => {
